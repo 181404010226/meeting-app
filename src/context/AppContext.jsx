@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from '../services/api';
+import api from '../services/api';
 
 const AppContext = createContext();
 
@@ -11,7 +11,7 @@ export const AppContextProvider = ({ children }) => {
     const fetchUser = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`/api/user?t=${new Date().getTime()}`, {
+            const response = await api.get(`/api/user?t=${new Date().getTime()}`, {
                 headers: {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
