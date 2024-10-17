@@ -11,7 +11,7 @@ export const AppContextProvider = ({ children }) => {
     const fetchUser = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/api/user?t=${new Date().getTime()}`, {
+            const response = await axios.get(`${API_BASE_URL}/api/user?t=${new Date().getTime()}`, {
                 headers: {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
