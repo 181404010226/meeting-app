@@ -1,21 +1,10 @@
-import React, { useEffect } from 'react';
-import { getBaseUrl } from '../services/api';
-import { Link, useLocation } from 'react-router-dom';
-import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress } from '@mui/material';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button, Box, Avatar, Typography, AppBar, Toolbar } from '@mui/material';
 import { useAppContext } from '../context/AppContext';
 
 const Home = () => {
-    const { user, loading, error, fetchUser } = useAppContext();
-    const location = useLocation();
-
-    useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        const loginSuccess = queryParams.get('login_success');
-
-        if (loginSuccess === 'true' && !user) {
-            fetchUser();
-        }
-    }, [location, user, fetchUser]);
+    const { user } = useAppContext();
 
     return (
         <Box>
@@ -32,11 +21,7 @@ const Home = () => {
             </AppBar>
             <Box sx={{ padding: 4, textAlign: 'center' }}>
                 <h1>Welcome to the Meeting App</h1>
-                {loading ? (
-                    <CircularProgress />
-                ) : error ? (
-                    <Typography color="error">{error}</Typography>
-                ) : user ? (
+                {user ? (
                     <Box sx={{ mt: 4 }}>
                         <Button variant="contained" color="primary" component={Link} to="/admin" sx={{ mr: 2 }}>
                             Admin Panel
