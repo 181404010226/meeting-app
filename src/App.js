@@ -10,7 +10,7 @@ import './App.css';
 const AppContent = () => {
   const { setUser } = useAppContext();
 
-  useEffect(() => {
+  React.useEffect(() => {
     // 使用 api 实例检查用户是否登录
     api.get('/api/user')
       .then(response => {
