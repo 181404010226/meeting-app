@@ -9,22 +9,27 @@ import './App.css';
 const AppContent = () => {
   const { setUser } = useAppContext();
 
+  // meeting-app/src/App.js
   React.useEffect(() => {
     // Check if the user is logged in when the app loads
     fetch('/api/user', { credentials: 'include' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.user) {
-                console.log('User data received:', data.user);  // 添加日志
-                setUser(data.user);
-            } else {
-                console.log('No user data received');  // 添加日志
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching user:', error);
-            console.log('Error details:', error.message);  // 添加更详细的错误日志
-        });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.user) {
+          console.log('User data received:', data.user);
+          setUser(data.user);
+        } else {
+          console.log('No user data received');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching user:', error);
+      });
   }, [setUser]);
 
   return (
