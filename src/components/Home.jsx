@@ -35,7 +35,7 @@ const Home = () => {
                         <Button
                             variant="contained"
                             color="primary"
-                            href="http://localhost:8080/login"
+                            href={`${getBaseUrl()}/login`}
                         >
                             Login with GitHub
                         </Button>
