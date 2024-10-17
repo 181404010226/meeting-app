@@ -1,4 +1,5 @@
 import React from 'react';
+import api from './services/api';  // 导入 api 实例
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AdminPanel from './components/AdminPanel';
 import MeetingSession from './components/MeetingSession';
@@ -9,17 +10,11 @@ import './App.css';
 const AppContent = () => {
   const { setUser } = useAppContext();
 
-  // meeting-app/src/App.js
-  React.useEffect(() => {
-    // Check if the user is logged in when the app loads
-    fetch('/api/user', { credentials: 'include' })
+  useEffect(() => {
+    // 使用 api 实例检查用户是否登录
+    api.get('/api/user')
       .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
+        const data = response.data;
         if (data.user) {
           console.log('User data received:', data.user);
           setUser(data.user);
