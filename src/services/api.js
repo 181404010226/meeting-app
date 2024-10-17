@@ -9,8 +9,8 @@ export const getBaseUrl = () => {
 };
 
 const instance = axios.create({
-    baseURL: getBaseUrl(),
-    withCredentials: true,
+    baseURL: 'https://golangbackend-1fa7a2c3465d.herokuapp.com',
+    // withCredentials: true,
 });
 
 export default instance;
