@@ -12,8 +12,10 @@ export const AppContextProvider = ({ children }) => {
     const fetchUser = async () => {
         setLoading(true);
         try {
+            console.log('Sending request to:', '/api/user'); // 输出请求地址
             const response = await api.get('/api/user');
-            console.log('Fetched user:', response.data.user); // Debug log
+            console.log('API response:', response); // 输出完整的响应对象
+            console.log('Fetched user:', response.data.user);
             setUser(response.data.user);
             setError(null);
         } catch (err) {
