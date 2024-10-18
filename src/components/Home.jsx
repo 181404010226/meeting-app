@@ -1,17 +1,26 @@
-// meeting-app/src/components/Home.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { getBaseUrl } from '../services/api';
-import { Link } from 'react-router-dom';
-import { Button, Box, Avatar, Typography, AppBar, Toolbar } from '@mui/material';
+import { Link, useLocation } from 'react-router-dom';
+import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress } from '@mui/material';
 import { useAppContext } from '../context/AppContext';
 
 const Home = () => {
-    const { user, loading, error } = useAppContext();
+    const { user, loading, error, fetchUser } = useAppContext(); // Ensure fetchUser is destructured
+    const location = useLocation();
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const loginSuccess = queryParams.get('login_success');
+
+        if (loginSuccess === 'true' && !user) {
+            fetchUser();
+        }
+    }, [location, user, fetchUser]);
 
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <CircularProgress />
+                <CircularProgress /> {/* Now correctly imported */}
             </Box>
         );
     }
