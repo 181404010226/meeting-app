@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import axios from '../services/api';
+import React, { useEffect, useState } from 'react';
 import { getBaseUrl } from '../services/api';
 import { Link, useLocation } from 'react-router-dom';
-import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress } from '@mui/material';
+import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-    const { user, loading, error, fetchUser } = useAppContext(); // Add logout to destructuring
+    const { user, loading, error, fetchUser } = useAppContext();
     const location = useLocation();
-    const navigate = useNavigate();
+    const [sessions, setSessions] = useState([]);
+    const [loadingSessions, setLoadingSessions] = useState(true);
+    const [sessionsError, setSessionsError] = useState(null);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -17,17 +19,30 @@ const Home = () => {
         if (loginSuccess === 'true' && !user) {
             fetchUser();
         }
+
+        fetchSessions();
     }, [location, user, fetchUser]);
 
+    const fetchSessions = async () => {
+        try {
+            const response = await axios.get('/api/sessions');
+            setSessions(response.data);
+        } catch (err) {
+            console.error('Error fetching sessions:', err);
+            setSessionsError('Failed to fetch sessions.');
+        } finally {
+            setLoadingSessions(false);
+        }
+    };
+
     const handleLogout = () => {
-        // Redirect to the logout endpoint
         window.location.href = `${getBaseUrl()}/logout`;
     };
 
-    if (loading) {
+    if (loading || loadingSessions) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <CircularProgress /> {/* Now correctly imported */}
+                <CircularProgress />
             </Box>
         );
     }
@@ -60,14 +75,13 @@ const Home = () => {
                 </Toolbar>
             </AppBar>
             <Box sx={{ padding: 4, textAlign: 'center' }}>
-                <h1>Welcome to the Meeting App</h1>
+                <Typography variant="h4" gutterBottom>
+                    Welcome to the Meeting App
+                </Typography>
                 {user ? (
                     <Box sx={{ mt: 4 }}>
                         <Button variant="contained" color="primary" component={Link} to="/admin" sx={{ mr: 2 }}>
                             Admin Panel
-                        </Button>
-                        <Button variant="contained" color="secondary" component={Link} to="/meeting">
-                            Join Meeting
                         </Button>
                     </Box>
                 ) : (
@@ -80,6 +94,24 @@ const Home = () => {
                             Login with GitHub
                         </Button>
                     </Box>
+                )}
+
+                <Typography variant="h5" gutterBottom sx={{ mt: 5 }}>
+                    Available Meetings
+                </Typography>
+                {sessionsError ? (
+                    <Typography color="error">{sessionsError}</Typography>
+                ) : (
+                    <List>
+                        {sessions.map((session) => (
+                            <ListItem key={session._id}>
+                                <ListItemText primary={session.name} />
+                                <Button variant="outlined" component={Link} to={`/meeting/${session._id}`}>
+                                    Join
+                                </Button>
+                            </ListItem>
+                        ))}
+                    </List>
                 )}
             </Box>
         </Box>
