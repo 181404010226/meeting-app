@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { getBaseUrl } from '../services/api';
 import { Link, useLocation } from 'react-router-dom';
 import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress } from '@mui/material';
+import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {

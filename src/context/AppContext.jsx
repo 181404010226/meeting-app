@@ -27,12 +27,26 @@ export const AppContextProvider = ({ children }) => {
         }
     };
 
+    const logout = async () => {
+        setLoading(true);
+        try {
+            await api.post('/logout');
+            setUser(null);
+            setError(null);
+        } catch (err) {
+            console.error('Error logging out:', err);
+            setError(err.response?.data?.message || err.message || 'Error logging out');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchUser();
     }, []);
 
     return (
-        <AppContext.Provider value={{ user, setUser, loading, error, fetchUser }}>
+        <AppContext.Provider value={{ user, setUser, loading, error, fetchUser, logout }}>
             {children}
         </AppContext.Provider>
     );
