@@ -2,11 +2,12 @@ import React, { useEffect } from 'react';
 import { getBaseUrl } from '../services/api';
 import { Link, useLocation } from 'react-router-dom';
 import { Button, Box, Avatar, Typography, AppBar, Toolbar, CircularProgress } from '@mui/material';
-import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-    const { user, loading, error, fetchUser } = useAppContext(); // Ensure fetchUser is destructured
+    const { user, loading, error, fetchUser, logout } = useAppContext(); // Add logout to destructuring
     const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -16,6 +17,11 @@ const Home = () => {
             fetchUser();
         }
     }, [location, user, fetchUser]);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/');
+    };
 
     if (loading) {
         return (
@@ -38,6 +44,20 @@ const Home = () => {
 
     return (
         <Box>
+            <AppBar position="static">
+                <Toolbar sx={{ justifyContent: 'space-between' }}>
+                    <Typography variant="h6">Meeting App</Typography>
+                    {user && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography sx={{ mr: 2 }}>{user.name}</Typography>
+                            <Avatar src={user.avatar_url} alt={user.name} />
+                            <Button color="inherit" onClick={handleLogout} sx={{ ml: 2 }}>
+                                Logout
+                            </Button>
+                        </Box>
+                    )}
+                </Toolbar>
+            </AppBar>
             <AppBar position="static">
                 <Toolbar sx={{ justifyContent: 'space-between' }}>
                     <Typography variant="h6">Meeting App</Typography>

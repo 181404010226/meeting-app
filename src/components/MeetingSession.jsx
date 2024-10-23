@@ -1,11 +1,11 @@
-// src/components/MeetingSession.jsx
 import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import ParticipantSummary from './ParticipantSummary';
 import CommentSection from './CommentSection';
 import axios from '../services/api';
+import { getBaseUrl } from '../services/api';
 
-const socket = io('http://localhost:8080'); // Adjust the URI as needed
+const socket = io(getBaseUrl()); // 使用 getBaseUrl 函数获取正确的 URL
 
 const MeetingSession = ({ sessionId }) => {
     const [participants, setParticipants] = useState([]);
