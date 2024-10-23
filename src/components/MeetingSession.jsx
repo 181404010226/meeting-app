@@ -4,48 +4,52 @@ import ParticipantSummary from './ParticipantSummary';
 import CommentSection from './CommentSection';
 import axios from '../services/api';
 import { getBaseUrl } from '../services/api';
+import { useParams } from 'react-router-dom';
 
-const MeetingSession = ({ sessionId }) => {
+
+const MeetingSession = () => {
+    const { sessionId } = useParams();  // 从 URL 参数中获取 sessionId
     const [participants, setParticipants] = useState([]);
     const [currentParticipant, setCurrentParticipant] = useState(null);
     const [socket, setSocket] = useState(null);
 
     useEffect(() => {
-        // Initialize WebSocket connection
-        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const ws = new WebSocket(`${protocol}://${getBaseUrl().replace(/^https?:\/\//, '')}/ws/sessions/${sessionId}`);
-
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            // Optionally, send a message to join the session
-            ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        const connectWebSocket = () => {
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${getBaseUrl().replace(/^https?:\/\//, '')}/ws/sessions/${sessionId}`);
+    
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                reconnectAttempts = 0;
+                ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
+            };
+    
+            ws.onclose = (event) => {
+                console.log('WebSocket disconnected:', event.code, event.reason);
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
+                    setTimeout(connectWebSocket, 3000 * reconnectAttempts);
+                }
+            };
+    
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+    
+            setSocket(ws);
         };
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'updateParticipants') {
-                setParticipants(data.data);
-            } else if (data.type === 'nextParticipant') {
-                setCurrentParticipant(data.participant);
-            } else if (data.type === 'summarySubmitted') {
-                // Handle summary submitted if needed
-                console.log('Summary Submitted:', data.summary);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        setSocket(ws);
-
-        // Cleanup on unmount
+    
+        connectWebSocket();
+    
         return () => {
-            ws.close();
+            if (ws) {
+                ws.close();
+            }
         };
     }, [sessionId]);
 

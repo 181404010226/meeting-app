@@ -1,23 +1,39 @@
 // src/components/CommentSection.jsx
 import React, { useEffect, useState } from 'react';
-import { TextField, Button, Box, List, ListItem, ListItemText } from '@mui/material';
+import { 
+    TextField, 
+    Button, 
+    Box, 
+    List, 
+    ListItem, 
+    ListItemText,
+    CircularProgress,
+    Typography 
+} from '@mui/material';
 import axios from '../services/api';
 
 const CommentSection = ({ sessionId }) => {
     const [comments, setComments] = useState([]);
     const [comment, setComment] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchComments();
-        // Optionally set up polling or WebSocket listeners for real-time comments
     }, [sessionId]);
 
     const fetchComments = async () => {
+        setLoading(true);
         try {
             const response = await axios.get(`/api/sessions/${sessionId}/comments`);
-            setComments(response.data);
+            setComments(response.data || []); // 确保始终是数组
+            setError(null);
         } catch (error) {
             console.error(error);
+            setComments([]); // 出错时设置为空数组
+            setError('Failed to load comments');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -29,6 +45,7 @@ const CommentSection = ({ sessionId }) => {
                 setComment('');
             } catch (error) {
                 console.error(error);
+                setError('Failed to submit comment');
             }
         }
     };
@@ -36,13 +53,24 @@ const CommentSection = ({ sessionId }) => {
     return (
         <Box sx={{ padding: 2 }}>
             <h3>Comments</h3>
-            <List>
-                {comments.map((c, index) => (
-                    <ListItem key={index}>
-                        <ListItemText primary={c.content} secondary={new Date(c.created_at).toLocaleString()} />
-                    </ListItem>
-                ))}
-            </List>
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                    <CircularProgress />
+                </Box>
+            ) : error ? (
+                <Typography color="error" sx={{ my: 2 }}>{error}</Typography>
+            ) : (
+                <List>
+                    {comments && comments.map((c, index) => (
+                        <ListItem key={index}>
+                            <ListItemText 
+                                primary={c.content} 
+                                secondary={new Date(c.created_at).toLocaleString()} 
+                            />
+                        </ListItem>
+                    ))}
+                </List>
+            )}
             <TextField
                 label="Add a comment"
                 value={comment}
@@ -52,7 +80,13 @@ const CommentSection = ({ sessionId }) => {
                 rows={2}
                 sx={{ mt: 2 }}
             />
-            <Button variant="contained" color="primary" onClick={submitComment} sx={{ mt: 1 }}>
+            <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={submitComment} 
+                sx={{ mt: 1 }}
+                disabled={!comment.trim()}
+            >
                 Submit Comment
             </Button>
         </Box>
