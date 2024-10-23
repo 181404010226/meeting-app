@@ -6,7 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-    const { user, loading, error, fetchUser, logout } = useAppContext(); // Add logout to destructuring
+    const { user, loading, error, fetchUser } = useAppContext(); // Add logout to destructuring
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -19,9 +19,9 @@ const Home = () => {
         }
     }, [location, user, fetchUser]);
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/');
+    const handleLogout = () => {
+        // Redirect to the logout endpoint
+        window.location.href = `${getBaseUrl()}/logout`;
     };
 
     if (loading) {
@@ -55,17 +55,6 @@ const Home = () => {
                             <Button color="inherit" onClick={handleLogout} sx={{ ml: 2 }}>
                                 Logout
                             </Button>
-                        </Box>
-                    )}
-                </Toolbar>
-            </AppBar>
-            <AppBar position="static">
-                <Toolbar sx={{ justifyContent: 'space-between' }}>
-                    <Typography variant="h6">Meeting App</Typography>
-                    {user && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography sx={{ mr: 2 }}>{user.name}</Typography>
-                            <Avatar src={user.avatar_url} alt={user.name} />
                         </Box>
                     )}
                 </Toolbar>
