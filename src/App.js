@@ -5,6 +5,7 @@ import AdminPanel from './components/AdminPanel';
 import MeetingSession from './components/MeetingSession';
 import Home from './components/Home';
 import { AppContextProvider, useAppContext } from './context/AppContext';
+import { getBaseUrl } from './services/api';
 import './App.css';
 
 const AppContent = () => {
@@ -44,6 +45,7 @@ const ProtectedRoute = ({ component }) => {
 };
 
 const App = () => {
+  console.log('API Base URL:', getBaseUrl());
   return (
     <AppContextProvider>
       <AppContent />
