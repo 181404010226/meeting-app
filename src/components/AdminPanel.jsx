@@ -34,14 +34,23 @@ const AdminPanel = () => {
     };
 
     const deleteSession = async (sessionId) => {
+        if (!sessionId) {
+            console.error('Invalid session ID');
+            return;
+        }
+    
         if (window.confirm('Are you sure you want to delete this session?')) {
             try {
-                await axios.delete(`/api/sessions/${sessionId}`);
-                alert('Session deleted successfully!');
-                fetchSessions();
+                const response = await axios.delete(`/api/sessions/${sessionId}`);
+                if (response.status === 200) {
+                    alert('Session deleted successfully!');
+                    fetchSessions();
+                } else {
+                    throw new Error('Failed to delete session');
+                }
             } catch (err) {
                 console.error('Error deleting session:', err);
-                alert('Failed to delete session.');
+                alert(err.response?.data || 'Failed to delete session.');
             }
         }
     };
@@ -88,7 +97,11 @@ const AdminPanel = () => {
                     <ListItem
                         key={session._id}
                         secondaryAction={
-                            <IconButton edge="end" aria-label="delete" onClick={() => deleteSession(session._id)}>
+                            <IconButton 
+                                edge="end" 
+                                aria-label="delete" 
+                                onClick={() => deleteSession(session._id)}
+                            >
                                 <DeleteIcon />
                             </IconButton>
                         }
