@@ -1,35 +1,63 @@
+// meeting-app/src/components/MeetingSession.jsx
 import React, { useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import ParticipantSummary from './ParticipantSummary';
 import CommentSection from './CommentSection';
 import axios from '../services/api';
 import { getBaseUrl } from '../services/api';
 
-const socket = io(getBaseUrl()); // 使用 getBaseUrl 函数获取正确的 URL
-
 const MeetingSession = ({ sessionId }) => {
     const [participants, setParticipants] = useState([]);
     const [currentParticipant, setCurrentParticipant] = useState(null);
+    const [socket, setSocket] = useState(null);
 
     useEffect(() => {
-        socket.emit('joinSession', sessionId);
+        // Initialize WebSocket connection
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${protocol}://${getBaseUrl().replace(/^https?:\/\//, '')}/ws/sessions/${sessionId}`);
 
-        socket.on('updateParticipants', (data) => {
-            setParticipants(data);
-        });
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            // Optionally, send a message to join the session
+            ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
+        };
 
-        socket.on('nextParticipant', (participant) => {
-            setCurrentParticipant(participant);
-        });
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'updateParticipants') {
+                setParticipants(data.data);
+            } else if (data.type === 'nextParticipant') {
+                setCurrentParticipant(data.participant);
+            } else if (data.type === 'summarySubmitted') {
+                // Handle summary submitted if needed
+                console.log('Summary Submitted:', data.summary);
+            }
+        };
 
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        setSocket(ws);
+
+        // Cleanup on unmount
         return () => {
-            socket.disconnect();
+            ws.close();
         };
     }, [sessionId]);
 
     const submitSummary = async (summary) => {
-        await axios.post(`/api/sessions/${sessionId}/summaries`, { summary });
-        socket.emit('summarySubmitted', { sessionId, summary });
+        try {
+            await axios.post(`/api/sessions/${sessionId}/summaries`, { summary });
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'summarySubmitted', sessionId, summary }));
+            }
+        } catch (error) {
+            console.error('Error submitting summary:', error);
+        }
     };
 
     return (
