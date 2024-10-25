@@ -63,13 +63,19 @@ const CommentSection = ({ sessionId, socket }) => {
     const submitComment = async () => {
         if (comment.trim() && stars !== null) {
             try {
-                await axios.post(`/api/sessions/${sessionId}/comments`, { content: comment, stars });
-                setComment('');
-                setStars(null);
-                // 新评论将通过 WebSocket 自动添加
+                const response = await axios.post(`/api/sessions/${sessionId}/comments`, {
+                    content: comment,
+                    stars: stars
+                });
+                
+                if (response.data.success) {
+                    setComment('');
+                    setStars(null);
+                    // 不需要手动更新评论列表，将通过 WebSocket 接收更新
+                }
             } catch (error) {
-                console.error(error);
-                setError('Failed to submit comment');
+                console.error('Error submitting comment:', error);
+                setError(error.response?.data || 'Failed to submit comment');
             }
         }
     };
