@@ -26,10 +26,12 @@ const Home = () => {
     const fetchSessions = async () => {
         try {
             const response = await axios.get('/api/sessions');
-            setSessions(response.data);
+            // 确保即使后端返回 null 也转换为空数组
+            setSessions(response.data || []);
         } catch (err) {
             console.error('Error fetching sessions:', err);
             setSessionsError('Failed to fetch sessions.');
+            setSessions([]); // 发生错误时设置为空数组
         } finally {
             setLoadingSessions(false);
         }
@@ -95,7 +97,6 @@ const Home = () => {
                         </Button>
                     </Box>
                 )}
-
                 <Typography variant="h5" gutterBottom sx={{ mt: 5 }}>
                     Available Meetings
                 </Typography>
@@ -103,14 +104,20 @@ const Home = () => {
                     <Typography color="error">{sessionsError}</Typography>
                 ) : (
                     <List>
-                        {sessions.map((session) => (
-                            <ListItem key={session._id}>
-                                <ListItemText primary={session.name} />
-                                <Button variant="outlined" component={Link} to={`/meeting/${session._id}`}>
-                                    Join
-                                </Button>
-                            </ListItem>
-                        ))}
+                        {sessions.length === 0 ? (
+                            <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+                                No meetings available at the moment.
+                            </Typography>
+                        ) : (
+                            sessions.map((session) => (
+                                <ListItem key={session._id}>
+                                    <ListItemText primary={session.name} />
+                                    <Button variant="outlined" component={Link} to={`/meeting/${session._id}`}>
+                                        Join
+                                    </Button>
+                                </ListItem>
+                            ))
+                        )}
                     </List>
                 )}
             </Box>

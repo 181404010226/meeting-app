@@ -27,8 +27,17 @@ const CommentSection = ({ sessionId, socket }) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'newComment') {
-                    setComments(prevComments => [...prevComments, data.comment]);
+                    const newComment = {
+                        ...data.comment,
+                        created_at: new Date(data.comment.created_at),
+                        user: {
+                            username: data.comment.username,
+                            avatar_url: data.comment.avatar_url,
+                        },
+                    };
+                    setComments(prevComments => [...prevComments, newComment]);
                 }
+
             } catch (err) {
                 console.error('Error parsing WebSocket message:', err);
             }
@@ -49,7 +58,16 @@ const CommentSection = ({ sessionId, socket }) => {
         setLoading(true);
         try {
             const response = await axios.get(`/api/sessions/${sessionId}/comments`);
-            setComments(response.data || []);
+            // 确保数据格式正确
+            const formattedComments = response.data.map(comment => ({
+                ...comment,
+                created_at: new Date(comment.created_at),
+                user: {
+                    username: comment.user?.username || 'Anonymous',
+                    avatar_url: comment.user?.avatar_url || '/default-avatar.png'
+                }
+            }));
+            setComments(formattedComments);
             setError(null);
         } catch (error) {
             console.error(error);
@@ -92,10 +110,55 @@ const CommentSection = ({ sessionId, socket }) => {
             ) : (
                 <List>
                     {comments && comments.map((c, index) => (
-                        <ListItem key={index}>
+                        <ListItem key={index} alignItems="flex-start">
+                            {/* 添加头像 */}
+                            <Box
+                                component="img"
+                                src={c.user?.avatar_url || '/default-avatar.png'}
+                                alt="user avatar"
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '50%',
+                                    mr: 2
+                                }}
+                            />
                             <ListItemText 
-                                primary={`${c.content} (${c.stars}星)`} 
-                                secondary={new Date(c.created_at).toLocaleString()} 
+                                primary={
+                                    <Box>
+                                        {/* 添加用户昵称 */}
+                                        <Typography
+                                            component="span"
+                                            variant="subtitle2"
+                                            sx={{ fontWeight: 'bold', mr: 1 }}
+                                        >
+                                            {c.user?.username || 'Anonymous'}
+                                        </Typography>
+                                        {/* 评分显示 */}
+                                        <Rating value={c.stars} readOnly max={10} size="small" />
+                                    </Box>
+                                }
+                                secondary={
+                                    <>
+                                        {/* 评论内容 */}
+                                        <Typography
+                                            component="span"
+                                            variant="body2"
+                                            color="text.primary"
+                                            sx={{ display: 'block', my: 1 }}
+                                        >
+                                            {c.content}
+                                        </Typography>
+                                        {/* 评论时间 */}
+                                        <Typography
+                                            component="span"
+                                            variant="caption"
+                                            color="text.secondary"
+                                        >
+                                            {new Date(c.created_at).toLocaleString()}
+                                        </Typography>
+                                    </>
+                                }
                             />
                         </ListItem>
                     ))}

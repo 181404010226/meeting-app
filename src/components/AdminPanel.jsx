@@ -24,10 +24,12 @@ const AdminPanel = () => {
     const fetchSessions = async () => {
         try {
             const response = await axios.get('/api/sessions');
-            setSessions(response.data);
+            // 确保即使后端返回 null 也转换为空数组
+            setSessions(response.data || []);
         } catch (err) {
             console.error('Error fetching sessions:', err);
             setError('Failed to fetch sessions.');
+            setSessions([]); // 发生错误时设置为空数组
         } finally {
             setLoading(false);
         }
@@ -93,22 +95,28 @@ const AdminPanel = () => {
                 Existing Sessions
             </Typography>
             <List>
-                {sessions.map((session) => (
-                    <ListItem
-                        key={session._id}
-                        secondaryAction={
-                            <IconButton 
-                                edge="end" 
-                                aria-label="delete" 
-                                onClick={() => deleteSession(session._id)}
-                            >
-                                <DeleteIcon />
-                            </IconButton>
-                        }
-                    >
-                        <ListItemText primary={session.name} />
-                    </ListItem>
-                ))}
+                {sessions.length === 0 ? (
+                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                        No sessions available. Create one to get started.
+                    </Typography>
+                ) : (
+                    sessions.map((session) => (
+                        <ListItem
+                            key={session._id}
+                            secondaryAction={
+                                <IconButton 
+                                    edge="end" 
+                                    aria-label="delete" 
+                                    onClick={() => deleteSession(session._id)}
+                                >
+                                    <DeleteIcon />
+                                </IconButton>
+                            }
+                        >
+                            <ListItemText primary={session.name} />
+                        </ListItem>
+                    ))
+                )}
             </List>
         </Box>
     );
