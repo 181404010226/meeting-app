@@ -1,6 +1,7 @@
 // meeting-app/src/components/MeetingSession.jsx
 import React, { useEffect, useState } from 'react';
 import ParticipantSummary from './ParticipantSummary';
+import ParticipantsList from './ParticipantsList';
 import CommentSection from './CommentSection';
 import axios from '../services/api';
 import { getBaseUrl } from '../services/api';
@@ -8,7 +9,7 @@ import { useParams } from 'react-router-dom';
 
 
 const MeetingSession = () => {
-    const { sessionId } = useParams();  // 从 URL 参数中获取 sessionId
+    const { sessionId } = useParams();
     const [participants, setParticipants] = useState([]);
     const [currentParticipant, setCurrentParticipant] = useState(null);
     const [socket, setSocket] = useState(null);
@@ -27,13 +28,39 @@ const MeetingSession = () => {
                 reconnectAttempts = 0;
                 ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
             };
+
+            ws.onmessage = (event) => {
+                try {
+                    if (!event.data) return;
+                    const data = JSON.parse(event.data);
+                    if (!data || !data.type) return;
+
+                    switch (data.type) {
+                        case 'participantsList':
+                            if (Array.isArray(data.participants)) {
+                                setParticipants(data.participants);
+                            }
+                            break;
+                        case 'nextParticipant':
+                            setCurrentParticipant(data.participant);
+                            break;
+                        case 'meetingEnded':
+                            setCurrentParticipant(null);
+                            break;
+                        default:
+                            console.log('Received unknown message type:', data.type);
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
     
             ws.onclose = (event) => {
                 console.log('WebSocket disconnected:', event.code, event.reason);
                 if (reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
                     console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
-                    setTimeout(connectWebSocket, 3000 * reconnectAttempts);
+                    setTimeout(connectWebSocket, 3000 * Math.min(reconnectAttempts, 5));
                 }
             };
     
@@ -67,6 +94,7 @@ const MeetingSession = () => {
     return (
         <div>
             <h2>Meeting Session</h2>
+            <ParticipantsList participants={participants} />
             {currentParticipant ? (
                 <ParticipantSummary participant={currentParticipant} onSubmit={submitSummary} />
             ) : (
