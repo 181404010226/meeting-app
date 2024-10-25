@@ -18,15 +18,36 @@ const MeetingSession = () => {
         let ws = null;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
+        let pingInterval;
+        let isComponentMounted = true; // 添加组件挂载状态标志
         
         const connectWebSocket = () => {
+            if (!isComponentMounted) return; // 如果组件已卸载，不要继续连接
+            if (ws && ws.readyState === WebSocket.CONNECTING) {
+                console.log('WebSocket is already connecting...');
+                return;
+            }
+            
             const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            ws = new WebSocket(`${protocol}://${getBaseUrl().replace(/^https?:\/\//, '')}/ws/sessions/${sessionId}`);
-    
+            const baseUrl = getBaseUrl().replace(/^https?:\/\//, '');
+            const wsUrl = `${protocol}://${baseUrl}/ws/sessions/${sessionId}`;
+            console.log('Connecting to WebSocket:', wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+
             ws.onopen = () => {
                 console.log('WebSocket connected');
                 reconnectAttempts = 0;
                 ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
+                
+                // 添加定时发送心跳的功能
+                pingInterval = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    } else {
+                        clearInterval(pingInterval);
+                    }
+                }, 15000);
             };
 
             ws.onmessage = (event) => {
@@ -36,6 +57,9 @@ const MeetingSession = () => {
                     if (!data || !data.type) return;
 
                     switch (data.type) {
+                        case 'connected':
+                            console.log('Successfully connected to session');
+                            break;
                         case 'participantsList':
                             if (Array.isArray(data.participants)) {
                                 setParticipants(data.participants);
@@ -57,7 +81,7 @@ const MeetingSession = () => {
     
             ws.onclose = (event) => {
                 console.log('WebSocket disconnected:', event.code, event.reason);
-                if (reconnectAttempts < maxReconnectAttempts) {
+                if (isComponentMounted && reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
                     console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
                     setTimeout(connectWebSocket, 3000 * Math.min(reconnectAttempts, 5));
@@ -74,7 +98,13 @@ const MeetingSession = () => {
         connectWebSocket();
     
         return () => {
+            isComponentMounted = false; // 组件卸载时设置标志
+            if (pingInterval) {
+                clearInterval(pingInterval);
+            }
             if (ws) {
+                ws.onclose = null;
+                ws.onerror = null;
                 ws.close();
             }
         };
