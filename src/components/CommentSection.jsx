@@ -1,4 +1,3 @@
-// src/components/CommentSection.jsx
 import React, { useEffect, useState } from 'react';
 import { 
     TextField, 
@@ -8,29 +7,53 @@ import {
     ListItem, 
     ListItemText,
     CircularProgress,
-    Typography 
+    Typography,
+    Rating
 } from '@mui/material';
 import axios from '../services/api';
 
-const CommentSection = ({ sessionId }) => {
+const CommentSection = ({ sessionId, socket }) => {
     const [comments, setComments] = useState([]);
     const [comment, setComment] = useState('');
+    const [stars, setStars] = useState(null); // 新增状态
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchComments();
-    }, [sessionId]);
+
+        // 不再直接设置 socket.onmessage
+        const handleWebSocketMessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'newComment') {
+                    setComments(prevComments => [...prevComments, data.comment]);
+                }
+            } catch (err) {
+                console.error('Error parsing WebSocket message:', err);
+            }
+        };
+
+        if (socket) {
+            socket.addEventListener('message', handleWebSocketMessage);
+        }
+
+        return () => {
+            if (socket) {
+                socket.removeEventListener('message', handleWebSocketMessage);
+            }
+        };
+    }, [sessionId, socket]);
 
     const fetchComments = async () => {
         setLoading(true);
         try {
             const response = await axios.get(`/api/sessions/${sessionId}/comments`);
-            setComments(response.data || []); // 确保始终是数组
+            setComments(response.data || []);
             setError(null);
         } catch (error) {
             console.error(error);
-            setComments([]); // 出错时设置为空数组
+            setComments([]);
             setError('Failed to load comments');
         } finally {
             setLoading(false);
@@ -38,11 +61,12 @@ const CommentSection = ({ sessionId }) => {
     };
 
     const submitComment = async () => {
-        if (comment.trim()) {
+        if (comment.trim() && stars !== null) {
             try {
-                await axios.post(`/api/sessions/${sessionId}/comments`, { content: comment });
-                setComments([...comments, { content: comment, created_at: new Date() }]);
+                await axios.post(`/api/sessions/${sessionId}/comments`, { content: comment, stars });
                 setComment('');
+                setStars(null);
+                // 新评论将通过 WebSocket 自动添加
             } catch (error) {
                 console.error(error);
                 setError('Failed to submit comment');
@@ -64,7 +88,7 @@ const CommentSection = ({ sessionId }) => {
                     {comments && comments.map((c, index) => (
                         <ListItem key={index}>
                             <ListItemText 
-                                primary={c.content} 
+                                primary={`${c.content} (${c.stars}星)`} 
                                 secondary={new Date(c.created_at).toLocaleString()} 
                             />
                         </ListItem>
@@ -80,12 +104,23 @@ const CommentSection = ({ sessionId }) => {
                 rows={2}
                 sx={{ mt: 2 }}
             />
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                <Rating
+                    name="stars"
+                    value={stars}
+                    onChange={(event, newValue) => {
+                        setStars(newValue);
+                    }}
+                    max={10}
+                />
+                <Typography sx={{ ml: 2 }}>{stars !== null ? `${stars} 星` : '请选择星数'}</Typography>
+            </Box>
             <Button 
                 variant="contained" 
                 color="primary" 
                 onClick={submitComment} 
                 sx={{ mt: 1 }}
-                disabled={!comment.trim()}
+                disabled={!comment.trim() || stars === null}
             >
                 Submit Comment
             </Button>
