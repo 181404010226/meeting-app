@@ -30,10 +30,6 @@ const CommentSection = ({ sessionId, socket }) => {
                     const newComment = {
                         ...data.comment,
                         created_at: new Date(data.comment.created_at),
-                        user: {
-                            username: data.comment.username,
-                            avatar_url: data.comment.avatar_url,
-                        },
                     };
                     setComments(prevComments => [...prevComments, newComment]);
                 }
@@ -58,15 +54,11 @@ const CommentSection = ({ sessionId, socket }) => {
         setLoading(true);
         try {
             const response = await axios.get(`/api/sessions/${sessionId}/comments`);
-            // 确保数据格式正确
             const formattedComments = response.data.map(comment => ({
                 ...comment,
-                created_at: new Date(comment.created_at),
-                user: {
-                    username: comment.user?.username || 'Anonymous',
-                    avatar_url: comment.user?.avatar_url || '/default-avatar.png'
-                }
+                created_at: new Date(comment.created_at)
             }));
+            console.log('Formatted comments:', formattedComments);
             setComments(formattedComments);
             setError(null);
         } catch (error) {
@@ -111,10 +103,9 @@ const CommentSection = ({ sessionId, socket }) => {
                 <List>
                     {comments && comments.map((c, index) => (
                         <ListItem key={index} alignItems="flex-start">
-                            {/* 添加头像 */}
                             <Box
                                 component="img"
-                                src={c.user?.avatar_url || '/default-avatar.png'}
+                                src={c.avatar_url || '/default-avatar.png'}
                                 alt="user avatar"
                                 sx={{
                                     width: 40,
@@ -126,21 +117,18 @@ const CommentSection = ({ sessionId, socket }) => {
                             <ListItemText 
                                 primary={
                                     <Box>
-                                        {/* 添加用户昵称 */}
                                         <Typography
                                             component="span"
                                             variant="subtitle2"
                                             sx={{ fontWeight: 'bold', mr: 1 }}
                                         >
-                                            {c.user?.username || 'Anonymous'}
+                                        {c.username || 'Anonymous'}  {/* 直接使用 username */}
                                         </Typography>
-                                        {/* 评分显示 */}
                                         <Rating value={c.stars} readOnly max={10} size="small" />
                                     </Box>
                                 }
                                 secondary={
                                     <>
-                                        {/* 评论内容 */}
                                         <Typography
                                             component="span"
                                             variant="body2"
@@ -149,7 +137,6 @@ const CommentSection = ({ sessionId, socket }) => {
                                         >
                                             {c.content}
                                         </Typography>
-                                        {/* 评论时间 */}
                                         <Typography
                                             component="span"
                                             variant="caption"
