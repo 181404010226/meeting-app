@@ -18,6 +18,8 @@ const CommentSection = ({ sessionId, socket }) => {
     const [stars, setStars] = useState(null); // 新增状态
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
 
     useEffect(() => {
         fetchComments();
@@ -71,7 +73,8 @@ const CommentSection = ({ sessionId, socket }) => {
     };
 
     const submitComment = async () => {
-        if (comment.trim() && stars !== null) {
+        if (comment.trim() && stars !== null && !isSubmitting) {
+            setIsSubmitting(true);
             try {
                 const response = await axios.post(`/api/sessions/${sessionId}/comments`, {
                     content: comment,
@@ -81,11 +84,12 @@ const CommentSection = ({ sessionId, socket }) => {
                 if (response.data.success) {
                     setComment('');
                     setStars(null);
-                    // 不需要手动更新评论列表，将通过 WebSocket 接收更新
                 }
             } catch (error) {
                 console.error('Error submitting comment:', error);
                 setError(error.response?.data || 'Failed to submit comment');
+            } finally {
+                setIsSubmitting(false);
             }
         }
     };
@@ -176,9 +180,9 @@ const CommentSection = ({ sessionId, socket }) => {
                 color="primary" 
                 onClick={submitComment} 
                 sx={{ mt: 1 }}
-                disabled={!comment.trim() || stars === null}
+                disabled={!comment.trim() || stars === null || isSubmitting}
             >
-                Submit Comment
+                {isSubmitting ? 'Submitting...' : 'Submit Comment'}
             </Button>
         </Box>
     );
