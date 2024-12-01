@@ -57,8 +57,8 @@ const MeetingSession = () => {
 
             // 获取当前环境的WebSocket URL
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsHost = process.env.REACT_APP_API_URL 
-                ? new URL(process.env.REACT_APP_API_URL).host
+            const wsHost = process.env.FRONTEND_URL
+                ? new URL(process.env.FRONTEND_URL).host
                 : window.location.host;
             
             const wsUrl = `${wsProtocol}//${wsHost}/ws/sessions/${sessionId}`;
