@@ -45,83 +45,70 @@ const MeetingSession = () => {
         let ws = null;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
-        let pingInterval;
-        let pongTimeout;
+        const reconnectDelay = 3000; // 3秒重连延迟
         let isComponentMounted = true;
 
         const connectWebSocket = () => {
             if (!isComponentMounted) return;
-            if (ws && ws.readyState === WebSocket.CONNECTING) {
+            if (socket && socket.readyState === WebSocket.CONNECTING) {
                 console.log('WebSocket is already connecting...');
                 return;
             }
 
-            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            const baseUrl = getBaseUrl().replace(/^https?:\/\//, '');
-            const wsUrl = `${protocol}://${baseUrl}/ws/sessions/${sessionId}`;
+            // 获取当前环境的WebSocket URL
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = process.env.REACT_APP_API_URL 
+                ? new URL(process.env.REACT_APP_API_URL).host
+                : window.location.host;
             
-            ws = new WebSocket(wsUrl);
+            const wsUrl = `${wsProtocol}//${wsHost}/ws/sessions/${sessionId}`;
+            console.log('Attempting to connect to WebSocket URL:', wsUrl);
+            
+            try {
+                ws = new WebSocket(wsUrl);
 
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-                reconnectAttempts = 0;
-                ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
-                
-                // 修改 ping 间隔为 30 秒
-                if (pingInterval) clearInterval(pingInterval);
-                pingInterval = setInterval(() => {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping' }));
-                        
-                        // 设置 pong 超时检查
-                        if (pongTimeout) clearTimeout(pongTimeout);
-                        pongTimeout = setTimeout(() => {
-                            console.log('Pong timeout - reconnecting...');
-                            ws.close();
-                        }, 10000); // 10 秒内没收到 pong 就重连
+                ws.onopen = () => {
+                    console.log('WebSocket connected successfully');
+                    reconnectAttempts = 0; // 重置重连次数
+                    setSocket(ws);
+                    ws.send(JSON.stringify({ type: 'joinSession', sessionId }));
+                };
+
+                ws.onclose = (event) => {
+                    console.log(`WebSocket closed with code: ${event.code}, reason: ${event.reason}`);
+                    setSocket(null);
+                    
+                    if (isComponentMounted && reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                        setTimeout(connectWebSocket, reconnectDelay);
+                    } else if (reconnectAttempts >= maxReconnectAttempts) {
+                        console.error('Max reconnection attempts reached');
                     }
-                }, 30000); // 30 秒发送一次 ping
-            };
+                };
 
-            // 添加 pong 消息处理
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'pong') {
-                        if (pongTimeout) clearTimeout(pongTimeout);
-                        return;
+                ws.onerror = (error) => {
+                    console.error('WebSocket error occurred:', error);
+                    // 可以在这里添加用户提示
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.close();
                     }
-                    handleWebSocketMessage(event);
-                } catch (error) {
-                    console.error('Error handling message:', error);
-                }
-            };
+                };
 
-            ws.onclose = (event) => {
-                console.log('WebSocket disconnected:', event.code, event.reason);
-                clearInterval(pingInterval);
-                clearTimeout(pongTimeout);
-                
+                ws.onmessage = handleWebSocketMessage;
+            } catch (error) {
+                console.error('Error creating WebSocket connection:', error);
                 if (isComponentMounted && reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
-                    setTimeout(connectWebSocket, 3000 * Math.min(reconnectAttempts, 5));
+                    setTimeout(connectWebSocket, reconnectDelay);
                 }
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                ws.close();
-            };
-
-            setSocket(ws);
+            }
         };
 
         connectWebSocket();
 
         return () => {
             isComponentMounted = false;
-            if (pingInterval) clearInterval(pingInterval);
-            if (pongTimeout) clearTimeout(pongTimeout);
             if (ws) {
                 ws.close();
             }
