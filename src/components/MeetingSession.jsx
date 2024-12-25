@@ -135,9 +135,18 @@ const MeetingSession = () => {
             <AppBar position="static">
                 <Toolbar sx={{ justifyContent: 'space-between' }}>
                     <Typography variant="h6">Meeting Session</Typography>
-                    <Button color="inherit" onClick={handleExitMeeting}>
-                        Exit Meeting
-                    </Button>
+                    <Box>
+                        <Button 
+                            color="inherit" 
+                            onClick={() => navigate(`/sessions/${sessionId}/minutes`)}
+                            sx={{ mr: 2 }}
+                        >
+                            会议纪要
+                        </Button>
+                        <Button color="inherit" onClick={handleExitMeeting}>
+                            Exit Meeting
+                        </Button>
+                    </Box>
                 </Toolbar>
             </AppBar>
             <Box sx={{ padding: 2 }}>

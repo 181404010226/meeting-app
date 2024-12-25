@@ -38,6 +38,7 @@ const Home = () => {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
         window.location.href = `${getBaseUrl()}/logout`;
     };
 
