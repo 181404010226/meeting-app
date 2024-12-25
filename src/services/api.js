@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const getBaseUrl = () => {
-    return process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    return ''; // 必须保持为空才能到首页
 };
 
 const instance = axios.create({
